@@ -12,16 +12,47 @@ Built for the UpGrad / Purplle Tech Challenge 2026 Round 2.
 
 ### Step A — Place the Dataset Files
 
-Copy the challenge-provided files into the designated paths inside this repository:
+Copy the challenge-provided datasets into the designated paths inside this repository so your folder structure looks exactly like this:
+
+```text
+store-intelligence/
+├── events_output/
+│   ├── ST1008/
+│   │   ├── CAM 1 - zone.jsonl       <-- Store 1 dataset
+│   │   ├── CAM 2 - zone.jsonl       <-- Store 1 dataset
+│   │   ├── CAM 3 - entry.jsonl      <-- Store 1 dataset
+│   │   └── CAM 5 - billing.jsonl    <-- Store 1 dataset
+│   └── ST1076/
+│       ├── entry 1.jsonl            <-- Store 2 dataset
+│       ├── zone.jsonl               <-- Store 2 dataset
+│       └── billing_area.jsonl       <-- Store 2 dataset
+└── data/
+    ├── New Data/
+    │   ├── POS - sample transactionsb1e826f.csv   ← Store 1 POS transaction log
+    │   ├── sample_eventsbe42122.jsonl             ← Store 2 raw event sample (optional fallback)
+    │   ├── Store 1/                               ← Store 1 raw CCTV footage
+    │   │   ├── CAM 1 - zone.mp4
+    │   │   ├── CAM 2 - zone.mp4
+    │   │   ├── CAM 3 - entry.mp4
+    │   │   ├── CAM 5 - billing.mp4
+    │   │   └── Store 1 - layout.png
+    │   └── Store 2/                               ← Store 2 raw CCTV footage
+    │       ├── billing_area.mp4
+    │       ├── entry 1.mp4
+    │       ├── entry 2.mp4
+    │       ├── zone.mp4
+    │       └── store 2 - layout.png
+    └── store_layout.json
+```
 
 #### 1. Store 1 (`ST1008` — Brigade Road)
-* **CCTV Events (JSONL)**: Place processed event logs in `events_output/ST1008/` (e.g., `CAM 1 - zone.jsonl`, `CAM 2 - zone.jsonl`, `CAM 3 - entry.jsonl`, `CAM 5 - billing.jsonl`).
-* **POS Transactions (CSV)**: Place POS transaction log in `data/New Data/POS - sample transactionsb1e826f.csv`.
+* **CCTV Events Datasets (JSONL)**: Place datasets in `events_output/ST1008/` (as shown in the structure above).
+* **POS Transactions Dataset (CSV)**: Place POS transaction dataset in `data/New Data/POS - sample transactionsb1e826f.csv`.
 
 #### 2. Store 2 (`ST1076` — Mumbai Hub)
-* **Dynamic CCTV Events (JSONL)**: Place processed event logs in `events_output/ST1076/` (e.g., `entry 1.jsonl`, `zone.jsonl`, `billing_area.jsonl`). If any file is present here, the ingestion pipeline automatically switches to **Dynamic Ingestion Mode** for Store 2.
-* **Appended JSONL Events**: Alternatively, append custom events directly to `data/New Data/sample_eventsbe42122.jsonl`. If this file contains more than the default 14 events, the script will parse them dynamically.
-* **Fallback Mode (Automatic)**: If no event files are placed in `events_output/ST1076/` and `sample_eventsbe42122.jsonl` is at default size, the script programmatically generates 15 visitors and 1 transaction for the dashboard metrics.
+* **Dynamic CCTV Events Datasets (JSONL)**: Place datasets in `events_output/ST1076/`. If any dataset file is present here, the ingestion pipeline automatically switches to **Dynamic Ingestion Mode** for Store 2.
+* **Appended JSONL Events Dataset**: Alternatively, append custom events directly to the dataset at `data/New Data/sample_eventsbe42122.jsonl`. If this file contains more than the default 14 events, the script will parse them dynamically.
+* **Fallback Mode (Automatic)**: If no dataset files are placed in `events_output/ST1076/` and `sample_eventsbe42122.jsonl` is at default size, the script programmatically generates 15 visitors and 1 transaction for the dashboard metrics.
 
 ---
 
