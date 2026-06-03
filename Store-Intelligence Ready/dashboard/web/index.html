@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apex Retail — Store Intelligence Dashboard</title>
+  <meta name="description" content="Live retail store analytics dashboard for Apex Retail. Real-time visitor metrics, zone heatmaps, and anomaly detection." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-primary: #0d0f14;
+      --bg-secondary: #141720;
+      --bg-card: #1a1f2e;
+      --bg-card-hover: #1f2537;
+      --accent-purple: #7c3aed;
+      --accent-blue: #2563eb;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-yellow: #f59e0b;
+      --accent-red: #ef4444;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border: #1e293b;
+      --border-active: #334155;
+      --gradient-hero: linear-gradient(135deg, #7c3aed22 0%, #2563eb22 50%, #06b6d422 100%);
+      --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      background-image: radial-gradient(ellipse at 20% 20%, #7c3aed15 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 80%, #2563eb10 0%, transparent 50%);
+    }
+
+    header {
+      background: linear-gradient(90deg, var(--bg-secondary) 0%, #151b2a 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .header-brand .logo {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .header-brand h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #c4b5fd, #93c5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-brand .store-tag {
+      font-size: 0.7rem;
+      background: #7c3aed22;
+      color: #a78bfa;
+      border: 1px solid #7c3aed44;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    #status-badge {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .status-healthy { background: #10b98120; color: #34d399; border: 1px solid #10b98140; }
+    .status-degraded { background: #ef444420; color: #f87171; border: 1px solid #ef444440; }
+    .status-offline { background: #f59e0b20; color: #fbbf24; border: 1px solid #f59e0b40; }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    .healthy .status-dot { background: #10b981; }
+    .degraded .status-dot { background: #ef4444; }
+    .offline .status-dot { background: #f59e0b; animation: none; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    #last-updated {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--card-accent, linear-gradient(90deg, var(--accent-purple), var(--accent-blue)));
+    }
+
+    .metric-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-active);
+      box-shadow: var(--shadow-card);
+    }
+
+    .metric-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    .metric-value {
+      font-size: 2rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      background: linear-gradient(90deg, #f1f5f9, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .metric-sub {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+    }
+
+    .metric-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .two-col { grid-template-columns: 1fr; }
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+
+    /* Anomalies */
+    .anomaly-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+    .anomaly-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.875rem;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .anomaly-info { background: #2563eb15; border-color: #2563eb30; }
+    .anomaly-warn { background: #f59e0b15; border-color: #f59e0b30; }
+    .anomaly-critical { background: #ef444415; border-color: #ef444430; }
+
+    .severity-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-info { background: #2563eb30; color: #60a5fa; }
+    .badge-warn { background: #f59e0b30; color: #fbbf24; }
+    .badge-critical { background: #ef444430; color: #f87171; }
+
+    .anomaly-description { font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem; }
+    .anomaly-type { font-size: 0.85rem; font-weight: 600; }
+
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+    }
+
+    .empty-state .icon { font-size: 2rem; margin-bottom: 0.5rem; }
+
+    /* Zone Dwell Table */
+    .dwell-table { width: 100%; border-collapse: collapse; }
+    .dwell-table th {
+      text-align: left;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .dwell-table td {
+      padding: 0.625rem 0.5rem;
+      font-size: 0.85rem;
+      border-bottom: 1px solid #1e293b50;
+    }
+    .dwell-bar-wrap {
+      height: 6px; background: var(--border);
+      border-radius: 4px; overflow: hidden; width: 100%;
+    }
+    .dwell-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    /* Funnel */
+    .funnel-stage {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .funnel-stage:last-child { border-bottom: none; }
+    .funnel-name { width: 120px; font-size: 0.82rem; color: var(--text-secondary); }
+    .funnel-bar-outer {
+      flex: 1; height: 8px;
+      background: var(--border); border-radius: 4px; overflow: hidden;
+    }
+    .funnel-bar-inner {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+    .funnel-count {
+      width: 50px; text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .funnel-drop { font-size: 0.7rem; color: #ef4444; width: 55px; text-align: right; }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Store Toolbar Switcher */
+    .store-toolbar {
+      max-width: 1400px;
+      margin: 1.5rem auto 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .store-selector-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+    }
+    
+    .store-selector-group {
+      display: flex;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      padding: 3px;
+      border-radius: 12px;
+    }
+    
+    .store-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      letter-spacing: 0.05em;
+    }
+    
+    .store-btn:hover {
+      color: var(--text-primary);
+    }
+    
+    .store-btn.active {
+      background: var(--accent-purple);
+      color: white;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    }
+
+    /* Heatmap Layout */
+    .heatmap-panel-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 2rem;
+      align-items: center;
+      margin-top: 1rem;
+    }
+    
+    @media (max-width: 900px) {
+      .heatmap-panel-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .heatmap-map-container {
+      position: relative;
+      background: #090b0e;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      min-height: 400px;
+    }
+    
+    .floorplan-image {
+      max-width: 100%;
+      max-height: 380px;
+      object-fit: contain;
+      opacity: 0.75;
+      border-radius: 8px;
+    }
+    
+    #zone-overlays-container {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+    }
+    
+    .zone-overlay {
+      position: absolute;
+      border-radius: 10px;
+      border: 2px solid rgba(255,255,255,0.18);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      pointer-events: auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      backdrop-filter: blur(1.5px);
+    }
+    
+    .zone-overlay:hover {
+      border-color: rgba(255,255,255,0.7);
+      transform: translateY(-2px) scale(1.02);
+      z-index: 10;
+    }
+    
+    .zone-overlay-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: white;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.85);
+      text-align: center;
+    }
+    
+    .zone-overlay-score {
+      font-size: 1.1rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: white;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.85);
+      margin-top: 2px;
+    }
+    
+    .heatmap-info-side {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .heatmap-subtitle {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .heatmap-desc {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+    
+    .heatmap-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+    }
+    
+    .legend-item {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .zone-details-card {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(37, 99, 235, 0.1) 100%);
+      border: 1px solid rgba(124, 58, 237, 0.25);
+      border-radius: 8px;
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .zone-details-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #c4b5fd;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .zone-details-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+    
+    .zone-details-label {
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+    }
+    
+    .zone-details-val {
+      font-size: 0.85rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-primary);
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <div class="logo">🏪</div>
+    <div>
+      <h1>Apex Retail — Store Intelligence</h1>
+    </div>
+    <span class="store-tag" id="store-tag-el">ST1008</span>
+  </div>
+  <div class="header-right">
+    <div id="status-badge" class="status-offline">
+      <span class="status-dot"></span>
+      <span id="status-text">Connecting...</span>
+    </div>
+    <span id="last-updated">—</span>
+  </div>
+</header>
+
+<div class="store-toolbar">
+  <div class="store-selector-label">ACTIVE MONITORING ARCHITECTURE:</div>
+  <div class="store-selector-group">
+    <button class="store-btn active" id="btn-st1008" onclick="switchStore('ST1008')">STORE 1 — BRIGADE ROAD</button>
+    <button class="store-btn" id="btn-st1076" onclick="switchStore('ST1076')">STORE 2 — MUMBAI HUB</button>
+  </div>
+</div>
+
+<main>
+  <!-- KPI Metric Cards -->
+  <div class="metrics-grid" id="metrics-grid">
+    <div class="metric-card" style="--card-accent: linear-gradient(90deg,#7c3aed,#a855f7)">
+      <div class="metric-icon">👤</div>
+      <div class="metric-label">Unique Visitors</div>
+      <div class="metric-value" id="kpi-visitors">—</div>
+      <div class="metric-sub">Today</div>
+    </div>
+    <div class="metric-card" style="--card-accent: linear-gradient(90deg,#10b981,#34d399)">
+      <div class="metric-icon">💰</div>
+      <div class="metric-label">Conversion Rate</div>
+      <div class="metric-value" id="kpi-conversion">—</div>
+      <div class="metric-sub">Visitors who purchased</div>
+    </div>
+    <div class="metric-card" style="--card-accent: linear-gradient(90deg,#f59e0b,#fbbf24)">
+      <div class="metric-icon">🧾</div>
+      <div class="metric-label">Queue Depth</div>
+      <div class="metric-value" id="kpi-queue">—</div>
+      <div class="metric-sub">Active billing queue</div>
+    </div>
+    <div class="metric-card" style="--card-accent: linear-gradient(90deg,#ef4444,#f87171)">
+      <div class="metric-icon">🚪</div>
+      <div class="metric-label">Abandonment Rate</div>
+      <div class="metric-value" id="kpi-abandon">—</div>
+      <div class="metric-sub">Queue abandonments</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <!-- Anomalies -->
+    <div class="card">
+      <div class="section-title">⚠ Active Anomalies</div>
+      <div class="anomaly-list" id="anomaly-list">
+        <div class="empty-state">
+          <div class="icon">✅</div>
+          <div>Loading anomalies...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zone Dwell -->
+    <div class="card">
+      <div class="section-title">📍 Zone Dwell Time</div>
+      <table class="dwell-table">
+        <thead>
+          <tr>
+            <th>Zone</th>
+            <th>Avg Dwell</th>
+            <th style="width:40%">Activity</th>
+          </tr>
+        </thead>
+        <tbody id="dwell-table-body">
+          <tr><td colspan="3" style="color:var(--text-muted);text-align:center;padding:1rem">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Interactive Floor Heatmap -->
+  <div class="card" style="margin-bottom: 2rem; overflow: hidden;">
+    <div class="section-title">🔥 Live Zone Heatmap & Dwell Overlays</div>
+    <div class="heatmap-panel-layout">
+      <!-- Left side: Interactive Map -->
+      <div class="heatmap-map-container">
+        <img id="floorplan-img" src="store1_layout.png" alt="Floor Layout" class="floorplan-image" />
+        <div id="zone-overlays-container">
+          <!-- Overlays dynamically populated -->
+        </div>
+      </div>
+      <!-- Right side: Details panel -->
+      <div class="heatmap-info-side">
+        <div class="heatmap-subtitle">Real-Time Occupancy Floor Plan</div>
+        <p class="heatmap-desc">This floor plan maps real-time zone traffic. Overlay colors shift dynamically from cool green/blue to hot pink/red representing normalized occupancy score (visitation frequency + dwell duration).</p>
+        <div class="heatmap-legend">
+          <div class="legend-item"><span class="legend-dot" style="background: hsla(200, 80%, 50%, 0.5)"></span> Cool (Low Activity)</div>
+          <div class="legend-item"><span class="legend-dot" style="background: hsla(100, 80%, 50%, 0.5)"></span> Moderate (Warm)</div>
+          <div class="legend-item"><span class="legend-dot" style="background: hsla(0, 80%, 50%, 0.5)"></span> Hot Spot (High traffic)</div>
+        </div>
+        <div class="zone-details-card" id="zone-hover-card">
+          <div class="zone-details-title">Hovered Zone Details</div>
+          <div class="zone-details-grid">
+            <div>
+              <div class="zone-details-label">Visits</div>
+              <div class="zone-details-val" id="zd-visits">—</div>
+            </div>
+            <div>
+              <div class="zone-details-label">Avg Dwell</div>
+              <div class="zone-details-val" id="zd-dwell">—</div>
+            </div>
+            <div>
+              <div class="zone-details-label">Intensity</div>
+              <div class="zone-details-val" id="zd-score">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conversion Funnel -->
+  <div class="card">
+    <div class="section-title">🔽 Conversion Funnel</div>
+    <div id="funnel-container">
+      <div class="empty-state"><div class="icon">📊</div><div>Loading funnel data...</div></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div id="footer-health">Store Intelligence API · Last updated: <span id="footer-ts">—</span></div>
+</footer>
+
+<script>
+const API_BASE = 'http://localhost:8000';
+let STORE_ID = 'ST1008';
+
+const zoneLayouts = {
+  'ST1008': {
+    'ENTRY_AREA': { top: '8%', left: '8%', width: '38%', height: '35%' },
+    'SKINCARE': { top: '8%', left: '54%', width: '38%', height: '35%' },
+    'MAKEUP': { top: '55%', left: '8%', width: '38%', height: '35%' },
+    'BILLING': { top: '55%', left: '54%', width: '38%', height: '35%' }
+  },
+  'ST1076': {
+    'Left Shelf': { top: '8%', left: '8%', width: '38%', height: '35%' },
+    'Center Display': { top: '8%', left: '54%', width: '38%', height: '35%' },
+    'Lipstick Aisle': { top: '55%', left: '8%', width: '38%', height: '35%' },
+    'Billing Counter Queue': { top: '55%', left: '54%', width: '38%', height: '35%' }
+  }
+};
+
+async function fetchJSON(url) {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+function formatMs(ms) {
+  if (!ms) return '0s';
+  if (ms >= 60000) return `${(ms/60000).toFixed(1)}m`;
+  return `${(ms/1000).toFixed(0)}s`;
+}
+
+function updateStatus(isOnline, statusText) {
+  const badge = document.getElementById('status-badge');
+  const text = document.getElementById('status-text');
+  badge.className = `status-${isOnline ? 'healthy' : 'offline'}`;
+  text.textContent = statusText || (isOnline ? 'HEALTHY' : 'OFFLINE');
+}
+
+function switchStore(storeId) {
+  if (STORE_ID === storeId) return;
+  STORE_ID = storeId;
+  
+  // Update store switcher buttons
+  document.getElementById('btn-st1008').classList.toggle('active', storeId === 'ST1008');
+  document.getElementById('btn-st1076').classList.toggle('active', storeId === 'ST1076');
+  
+  // Update header store tag
+  document.getElementById('store-tag-el').textContent = storeId;
+  
+  // Update floorplan image src
+  const imgEl = document.getElementById('floorplan-img');
+  imgEl.src = storeId === 'ST1008' ? 'store1_layout.png' : 'store2_layout.png';
+  
+  // Reset hover info card
+  document.getElementById('zd-visits').textContent = '—';
+  document.getElementById('zd-dwell').textContent = '—';
+  document.getElementById('zd-score').textContent = '—';
+  
+  // Refresh immediately
+  refreshAll();
+}
+
+function renderHeatmapOverlays(heatmapData) {
+  const container = document.getElementById('zone-overlays-container');
+  container.innerHTML = ''; // clear old overlays
+  
+  const zones = heatmapData?.zones || [];
+  const activeLayout = zoneLayouts[STORE_ID] || {};
+  
+  zones.forEach(zone => {
+    const zid = zone.zone_id;
+    const layout = activeLayout[zid];
+    if (!layout) return;
+    
+    const score = zone.normalised_score || 0;
+    // Map score: cool blue to hot red
+    const hue = Math.max(0, 200 - (score * 2));
+    const bg = `hsla(${hue}, 80%, 50%, 0.45)`;
+    const border = `hsla(${hue}, 80%, 55%, 0.8)`;
+    
+    // Create overlay div
+    const overlay = document.createElement('div');
+    overlay.className = 'zone-overlay';
+    overlay.style.top = layout.top;
+    overlay.style.left = layout.left;
+    overlay.style.width = layout.width;
+    overlay.style.height = layout.height;
+    overlay.style.backgroundColor = bg;
+    overlay.style.borderColor = border;
+    overlay.style.boxShadow = `0 4px 15px hsla(${hue}, 80%, 50%, 0.4)`;
+    
+    overlay.innerHTML = `
+      <div class="zone-overlay-title">${zid}</div>
+      <div class="zone-overlay-score">${score}%</div>
+    `;
+    
+    // Hover details card update
+    overlay.addEventListener('mouseenter', () => {
+      document.getElementById('zd-visits').textContent = zone.visit_frequency ?? '0';
+      document.getElementById('zd-dwell').textContent = formatMs(zone.avg_dwell_ms);
+      document.getElementById('zd-score').textContent = `${score}%`;
+      
+      overlay.style.transform = 'translateY(-4px) scale(1.03)';
+      overlay.style.boxShadow = `0 10px 25px hsla(${hue}, 90%, 50%, 0.65)`;
+    });
+    
+    overlay.addEventListener('mouseleave', () => {
+      overlay.style.transform = '';
+      overlay.style.boxShadow = `0 4px 15px hsla(${hue}, 80%, 50%, 0.4)`;
+    });
+    
+    container.appendChild(overlay);
+  });
+}
+
+function updateMetrics(data) {
+  if (!data) return;
+  document.getElementById('kpi-visitors').textContent = data.unique_visitors ?? '—';
+  document.getElementById('kpi-conversion').textContent =
+    data.conversion_rate != null ? `${(data.conversion_rate * 100).toFixed(1)}%` : '—';
+  document.getElementById('kpi-queue').textContent = data.queue_depth ?? '—';
+  document.getElementById('kpi-abandon').textContent =
+    data.abandonment_rate != null ? `${(data.abandonment_rate * 100).toFixed(1)}%` : '—';
+
+  // Zone dwell table
+  const tbody = document.getElementById('dwell-table-body');
+  const dwell = data.avg_dwell_per_zone || {};
+  const entries = Object.entries(dwell);
+  const maxDwell = Math.max(...entries.map(([,v]) => v), 1);
+
+  if (entries.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted);text-align:center;padding:1rem">No zone data yet</td></tr>';
+  } else {
+    tbody.innerHTML = entries.map(([zone, ms]) => `
+      <tr>
+        <td style="font-weight:500">${zone}</td>
+        <td style="font-family:'JetBrains Mono',monospace;color:#94a3b8">${formatMs(ms)}</td>
+        <td>
+          <div class="dwell-bar-wrap">
+            <div class="dwell-bar" style="width:${(ms/maxDwell*100).toFixed(1)}%"></div>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+}
+
+function updateAnomalies(data) {
+  const list = document.getElementById('anomaly-list');
+  const anomalies = data?.anomalies || [];
+  if (anomalies.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">✅</div><div>No active anomalies — all systems normal</div></div>';
+    return;
+  }
+  list.innerHTML = anomalies.map(a => {
+    const sev = (a.severity || 'INFO').toLowerCase();
+    const badgeClass = `badge-${sev}`;
+    const itemClass = `anomaly-${sev}`;
+    return `
+      <div class="anomaly-item ${itemClass}">
+        <div>
+          <span class="severity-badge ${badgeClass}">${a.severity}</span>
+          <div class="anomaly-type">${a.anomaly_type}</div>
+          <div class="anomaly-description">${a.description}</div>
+          <div class="anomaly-description" style="margin-top:4px;color:#64748b;font-size:0.77rem">
+            → ${a.suggested_action}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateFunnel(data) {
+  const container = document.getElementById('funnel-container');
+  const stages = data?.stages || [];
+  if (stages.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📊</div><div>No funnel data yet</div></div>';
+    return;
+  }
+  const maxCount = Math.max(...stages.map(s => s.count), 1);
+  container.innerHTML = stages.map(s => `
+    <div class="funnel-stage">
+      <span class="funnel-name">${s.name}</span>
+      <div class="funnel-bar-outer">
+        <div class="funnel-bar-inner" style="width:${(s.count/maxCount*100).toFixed(1)}%"></div>
+      </div>
+      <span class="funnel-count">${s.count}</span>
+      <span class="funnel-drop">${s.drop_off_pct > 0 ? '-' + s.drop_off_pct.toFixed(1) + '%' : ''}</span>
+    </div>
+  `).join('');
+}
+
+function updateFooter(health) {
+  const ts = new Date().toLocaleTimeString();
+  document.getElementById('footer-ts').textContent = ts;
+  document.getElementById('last-updated').textContent = `Updated ${ts}`;
+}
+
+async function refreshAll() {
+  const [metrics, anomalies, health, funnel, heatmap] = await Promise.all([
+    fetchJSON(`${API_BASE}/stores/${STORE_ID}/metrics`),
+    fetchJSON(`${API_BASE}/stores/${STORE_ID}/anomalies`),
+    fetchJSON(`${API_BASE}/health`),
+    fetchJSON(`${API_BASE}/stores/${STORE_ID}/funnel`),
+    fetchJSON(`${API_BASE}/stores/${STORE_ID}/heatmap`),
+  ]);
+
+  const isOnline = !!metrics;
+  updateStatus(isOnline, health?.status?.toUpperCase() || (isOnline ? 'ONLINE' : 'OFFLINE'));
+  updateMetrics(metrics);
+  updateAnomalies(anomalies);
+  updateFunnel(funnel);
+  renderHeatmapOverlays(heatmap);
+  updateFooter(health);
+}
+
+// Initial load + polling every 3 seconds
+refreshAll();
+setInterval(refreshAll, 3000);
+</script>
+</body>
+</html>

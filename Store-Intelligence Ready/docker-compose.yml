@@ -1,0 +1,23 @@
+version: "3.9"
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./events_output:/app/events_output
+      - ./data:/app/data:ro
+      - ./store_intelligence.db:/app/store_intelligence.db
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./store_intelligence.db
+      - LOG_LEVEL=INFO
+      - STALE_FEED_THRESHOLD_MINUTES=10
+      - APP_VERSION=1.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

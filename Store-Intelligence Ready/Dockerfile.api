@@ -1,0 +1,30 @@
+FROM python:3.11-slim
+
+# System deps for OpenCV and curl (for healthcheck)
+RUN apt-get update && apt-get install -y \
+    libgl1 \
+    libglib2.0-0 \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install Python deps first (cached layer)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY app/ ./app/
+COPY pipeline/ ./pipeline/
+COPY dashboard/ ./dashboard/
+
+# Copy data directory (read-only reference, also mounted as volume)
+COPY data/ ./data/
+
+# Create events_output directory
+RUN mkdir -p events_output
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
