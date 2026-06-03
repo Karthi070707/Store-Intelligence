@@ -1,0 +1,27 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Data and Models (DO NOT PUSH)
+data/New Data/**/*.mp4
+data/New Data/*.csv
+data/New Data/*.jsonl
+*.mp4
+yolov8*.pt
+*.db
+store_intelligence.db
+test_store_intelligence.db
+
+# Output events
+events_output/
+
+# Virtual environments
+venv/
+env/
+.env
+
+# Pytest / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
